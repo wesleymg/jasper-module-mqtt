@@ -5,13 +5,17 @@ import re
 import paho.mqtt.publish as publish
 import paho.mqtt.client as mqtt
 
+#Rooms and locations of things like doors go here
 PLACES = ["BED", "LIVING", "KITCHEN", "DINING",
           "OFFICE", "SUN", "BATH", "FRONT", 
           "BACK", "SIDE", "HOME"]
+#Things you want to interact with
 DEVICES = ["DEVICE", "LIGHT", "BLINDS", "DOOR", "TEMPERATURE"]
+#What you want each device to do
 PAYLOADS = ["ON", "OFF", "OF", "OPEN", "CLOSE", "STATUS", 
             "LOCK", "UNLOCK", "UP", "DOWN"]
-DESCRIPTORS = ["WESLEY"]
+#Write the names of anyone with a room here to differentiate
+DESCRIPTORS = ["NAME"]
 
 WORDS = ["MOSQUITTO", "ROOM"] + DEVICES + PLACES + PAYLOADS + DESCRIPTORS
 PRIORITY = 4
@@ -36,15 +40,20 @@ def handle(text, mic, profile):
     if words[1 + x] == "ROOM":
         x += 1
     if words[1 + x] not in DEVICES:
-        return mic.say(words[1 + x]+" is not found in the list of valid devices")
+        return mic.say(words[1 + x] +" is not found in the list of valid devices")
     if words[2 + x] not in PAYLOADS:
-        return mic.say(words[2 + x]+" is not found in the list of valid payloads")
+        return mic.say(words[2 + x] +" is not found in the list of valid payloads")
     if words[0 + x] == "ROOM":
-        topic = '/'.join(['jasper']+words[1 + x] + words[0 + x - 1] + words[2 + x])
-        payload = words[2 + x]
+        if words[0] in DESCRIPTORS:
+            topic = '/'.join(['jasper'] + words[1 + x] + (words[0] + words[1]) + words[2 + x])
+        else:
+            topic = '/'.join(['jasper'] + words[1 + x] + words[0 + x - 1] + words[2 + x])
     else:
-        topic = '/'.join(['jasper']+words[1 + x] + words[0 + x] + words[2 + x])
-        payload = words[2 + x]
+         if words[0] in DESCRIPTORS:
+            topic = '/'.join(['jasper'] + words[1 + x] + (words[0] + words[1]) + words[2 + x])
+        else:
+            topic = '/'.join(['jasper'] + words[1 + x] + words[0 + x - 1] + words[2 + x])
+    payload = words[2 + x]
     if payload == 'OF':
         payload = 'OFF'
     if 'protocol' in profile['mqtt'] and profile['mqtt']['protocol'] == 'MQTTv311':
